@@ -1,0 +1,18 @@
+/node_modules
+oh_modules/
+/local.properties
+/.idea
+**/build
+/.hvigor
+.cxx
+/.clangd
+/.clang-format
+/.clang-tidy
+**/.test
+/.appanalyzer
+/products/*/src/main/resources/rawfile/echo-dev-ca.pem
+
+# Local music and artwork
+/features/player/src/main/resources/rawfile/track-*.mp3
+/features/player/src/main/resources/rawfile/lyric-*.lrc
+/features/home/src/main/resources/rawfile/album-*.jpg

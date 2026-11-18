@@ -1,0 +1,48 @@
+{
+  "color": [
+    {
+      "name": "music_background",
+      "value": "#FAF8F7"
+    },
+    {
+      "name": "music_surface",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "music_text_primary",
+      "value": "#221C22"
+    },
+    {
+      "name": "music_text_secondary",
+      "value": "#6C5E66"
+    },
+    {
+      "name": "music_border",
+      "value": "#E9E0E4"
+    },
+    {
+      "name": "music_accent",
+      "value": "#A52646"
+    },
+    {
+      "name": "music_accent_surface",
+      "value": "#F7E7EB"
+    },
+    {
+      "name": "music_on_accent",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "music_surface_alt",
+      "value": "#F0EAED"
+    },
+    {
+      "name": "music_error",
+      "value": "#9F2339"
+    },
+    {
+      "name": "music_error_surface",
+      "value": "#FCEAEC"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@cloudmusic/commons",
+  "version": "1.0.0",
+  "description": "Shared models, state, and utilities",
+  "main": "Index.ets",
+  "dependencies": {}
+}

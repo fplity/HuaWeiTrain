@@ -1,0 +1,9 @@
+{
+  "name": "@cloudmusic/login",
+  "version": "1.0.0",
+  "description": "Login and profile",
+  "main": "Index.ets",
+  "dependencies": {
+    "@cloudmusic/commons": "file:../../commons"
+  }
+}

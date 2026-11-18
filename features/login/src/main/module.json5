@@ -1,0 +1,11 @@
+{
+  "module": {
+    "name": "login",
+    "type": "har",
+    "deviceTypes": [
+      "phone",
+      "tablet",
+      "2in1"
+    ]
+  }
+}

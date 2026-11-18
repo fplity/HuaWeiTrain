@@ -1,0 +1,9 @@
+{
+  "name": "@cloudmusic/player",
+  "version": "1.0.0",
+  "description": "Playback, lyrics, and comments",
+  "main": "Index.ets",
+  "dependencies": {
+    "@cloudmusic/commons": "file:../../commons"
+  }
+}

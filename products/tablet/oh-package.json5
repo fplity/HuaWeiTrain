@@ -1,0 +1,14 @@
+{
+  "name": "tablet",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@cloudmusic/commons": "file:../../commons",
+    "@cloudmusic/login": "file:../../features/login",
+    "@cloudmusic/home": "file:../../features/home",
+    "@cloudmusic/player": "file:../../features/player"
+  }
+}

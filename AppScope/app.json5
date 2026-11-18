@@ -1,0 +1,10 @@
+{
+  "app": {
+    "bundleName": "com.example.huaweitrain",
+    "vendor": "example",
+    "versionCode": 1000000,
+    "versionName": "1.0.0",
+    "icon": "$media:echo_app_icon",
+    "label": "$string:app_name"
+  }
+}

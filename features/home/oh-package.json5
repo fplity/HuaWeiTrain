@@ -1,0 +1,9 @@
+{
+  "name": "@cloudmusic/home",
+  "version": "1.0.0",
+  "description": "Discovery, search, and playlists",
+  "main": "Index.ets",
+  "dependencies": {
+    "@cloudmusic/commons": "file:../../commons"
+  }
+}
