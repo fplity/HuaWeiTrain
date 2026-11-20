@@ -1,15 +1,21 @@
-import { AppContext, formatPlaybackTime, MusicIcon, MusicTheme, PlayerStore, windowBreakpoint,
+import { curves } from '@kit.ArkUI';
+import { AppContext, formatPlaybackTime, MusicIcon, MusicTheme, PlayerStore, SongFavorites, windowBreakpoint,
   WindowBreakpoint } from '@cloudmusic/commons';
 import { CommentPanel } from '../view/CommentPanel';
 import { SpectrumDecoration } from '../view/SpectrumDecoration';
 import { DiscCanvas } from '../view/DiscCanvas';
 import { LyricView } from '../view/LyricView';
-import { RingProgress } from '../view/RingProgress';
 import { PlayerControls } from '../view/PlayerControls';
+import { SongDetails } from '../view/SongDetails';
+import { allowsPlayerMotion } from '../service/PlayerMotion';
+import { TrackNotes } from '../service/TrackNotes';
+
+const DETAILS_SCROLL_MS: number = 240;
 
 @ComponentV2
 export struct PlayerPage {
   @Require @Param player: PlayerStore;
+  @Require @Param favorites: SongFavorites;
   @Require @Param onToggle: () => void;
   @Require @Param onStop: () => void;
   @Require @Param onPrevious: () => void;
@@ -19,6 +25,11 @@ export struct PlayerPage {
   @Local showingLyrics: boolean = false;
   @Local showingComments: boolean = false;
   @Local visible: boolean = false;
+  @Local motionEnabled: boolean = true;
+  @Local viewportHeight: number = 0;
+  @Local playbackHeight: number = 0;
+  @Local scrollY: number = 0;
+  private readonly playerScroller: Scroller = new Scroller();
   private readonly session = AppContext.session;
 
   private get canComment(): boolean {
@@ -31,6 +42,29 @@ export struct PlayerPage {
 
   private get wide(): boolean {
     return this.breakpoint !== 'compact';
+  }
+
+  aboutToAppear(): void {
+    const context = this.getUIContext().getHostContext();
+    this.motionEnabled = allowsPlayerMotion(context);
+    if (context) {
+      TrackNotes.load(context.resourceManager);
+    }
+  }
+
+  private get detailProgress(): number {
+    const controlsOverflow = Math.max(0, this.playbackHeight - this.viewportHeight);
+    const fadeDistance = Math.max(1, this.viewportHeight * 0.72);
+    return Math.min(1, Math.max(0, (this.scrollY - controlsOverflow) / fadeDistance));
+  }
+
+  private scrollToSection(details: boolean): void {
+    this.playerScroller.scrollTo({
+      xOffset: 0,
+      yOffset: details ? this.playbackHeight : 0,
+      animation: this.motionEnabled ? { duration: DETAILS_SCROLL_MS, curve: curves.cubicBezierCurve(0.23, 1, 0.32, 1) } :
+        false
+    });
   }
 
   @Monitor('player.currentIndex', 'player.queue')
@@ -110,9 +144,8 @@ export struct PlayerPage {
             DiscCanvas({
               coverUrl: this.player.current?.coverUrl ?? '',
               artworkId: this.player.current?.id ?? 0,
-              spinning: this.visible && this.player.status === 'playing'
+              spinning: this.visible && this.detailProgress < 0.95 && this.player.status === 'playing'
             })
-            RingProgress({ positionMs: this.draftPosition ?? this.player.positionMs, durationMs: this.player.durationMs })
           }
           .width('100%')
           .height('100%')
@@ -125,6 +158,32 @@ export struct PlayerPage {
     }
     .width(this.wide ? '50%' : '100%')
     .padding({ right: this.wide ? 18 : 0 })
+  }
+
+  private get isFavorite(): boolean {
+    const song = this.player.current;
+    return !!song && this.favorites.isFavorite(song.id);
+  }
+
+  @Builder
+  favoriteButton() {
+    Button({ type: ButtonType.Circle }) {
+      SymbolGlyph(this.isFavorite ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart'))
+        .fontSize(20)
+        .fontColor([this.isFavorite ? MusicTheme.playerAccent : MusicTheme.playerText])
+        .accessibilityLevel('no')
+    }
+    .id('player-favorite-toggle')
+    .width(42)
+    .height(42)
+    .backgroundColor(this.isFavorite ? '#40F7A0B5' : '#26FFFFFF')
+    .accessibilityText(this.isFavorite ? '取消喜欢' : '添加到我喜欢的音乐')
+    .onClick(() => {
+      const song = this.player.current;
+      if (song) {
+        this.favorites.toggleFavorite(song.id);
+      }
+    })
   }
 
   @Builder
@@ -145,6 +204,9 @@ export struct PlayerPage {
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
+      if (this.player.current) {
+        this.favoriteButton()
+      }
       Button(this.showingLyrics ? '封面' : '歌词')
         .id('player-lyrics-toggle')
         .height(38)
@@ -233,17 +295,81 @@ export struct PlayerPage {
         this.identity()
         this.transport()
         if (!this.shortWindow && !this.showingComments) {
-          SpectrumDecoration().opacity(0.55)
+          SpectrumDecoration({
+            player: this.player,
+            active: this.visible && this.motionEnabled && this.detailProgress < 0.95,
+            seekMs: this.draftPosition
+          }).opacity(0.62)
         }
       }
       .width(this.wide ? '50%' : '100%')
     }
     .width('100%')
     .constraintSize({ maxWidth: this.wide ? 960 : 440 })
-    .padding({ left: 24, right: 24, top: this.wide ? 20 : 9, bottom: 24 })
+    .padding({ left: 24, right: 24, top: this.wide ? 20 : 9, bottom: this.wide ? 20 : 8 })
     .borderRadius(this.wide ? 26 : 0)
     .backgroundColor(this.wide ? '#A6221721' : Color.Transparent)
     .border({ width: this.wide ? 1 : 0, color: '#29FFFFFF' })
+  }
+
+  @Builder
+  scrollablePlayer() {
+    Scroll(this.playerScroller) {
+      Column() {
+        Column({ space: 4 }) {
+          this.nowPlaying()
+          Button({ type: ButtonType.Normal }) {
+            Row({ space: 7 }) {
+              MusicIcon({ name: 'down', iconSize: 15, tint: MusicTheme.playerMuted })
+              Text('上滑查看歌曲资料')
+                .fontColor(MusicTheme.playerMuted)
+                .fontSize(13)
+            }
+          }
+          .id('player-show-track-details')
+          .height(44)
+          .padding({ left: 12, right: 12 })
+          .backgroundColor(Color.Transparent)
+          .borderRadius(12)
+          .accessibilityText('查看歌曲资料')
+          .onClick(() => { this.scrollToSection(true); })
+        }
+        .id(this.wide ? 'player-wide-card' : 'player-compact-content')
+        .width('100%')
+        .constraintSize({ minHeight: this.viewportHeight })
+        .justifyContent(this.wide ? FlexAlign.Center : FlexAlign.Start)
+        .padding({ left: this.wide ? 20 : 0, right: this.wide ? 20 : 0, bottom: this.wide ? 14 : 0 })
+        .opacity(this.motionEnabled ? 1 - this.detailProgress : 1)
+        .accessibilityLevel(this.detailProgress >= 0.98 ? 'no-hide-descendants' : 'auto')
+        .onAreaChange((_oldArea: Area, area: Area) => { this.playbackHeight = Number(area.height); })
+
+        if (this.player.current) {
+          Column() {
+            SongDetails({
+              song: this.player.current,
+              playing: this.player.status === 'playing',
+              onToggle: this.onToggle,
+              onReturn: () => { this.scrollToSection(false); }
+            })
+          }
+          .id('player-track-details')
+          .width('100%')
+          .constraintSize({ minHeight: this.viewportHeight })
+          .opacity(this.motionEnabled ? this.detailProgress : 1)
+          .accessibilityLevel(this.detailProgress < 0.16 ? 'no-hide-descendants' : 'auto')
+        }
+      }
+      .width('100%')
+    }
+    .id('player-section-scroll')
+    .width('100%')
+    .layoutWeight(1)
+    .align(Alignment.Top)
+    .scrollBar(BarState.Off)
+    .edgeEffect(EdgeEffect.None)
+    .enablePaging(this.motionEnabled && !this.shortWindow && this.playbackHeight <= this.viewportHeight + 1)
+    .onAreaChange((_oldArea: Area, area: Area) => { this.viewportHeight = Number(area.height); })
+    .onDidScroll(() => { this.scrollY = this.playerScroller.currentOffset().yOffset; })
   }
 
   build() {
@@ -281,18 +407,7 @@ export struct PlayerPage {
         Column() {
           this.playerHeader()
           if (this.player.current) {
-            Scroll() {
-              Column() {
-                this.nowPlaying()
-              }
-              .id(this.wide ? 'player-wide-card' : 'player-compact-content')
-              .width('100%')
-              .padding({ left: this.wide ? 20 : 0, right: this.wide ? 20 : 0, bottom: this.wide ? 14 : 0 })
-            }
-            .width('100%')
-            .layoutWeight(1)
-            .align(this.wide ? Alignment.Center : Alignment.Top)
-            .scrollBar(this.wide ? BarState.Auto : BarState.Off)
+            this.scrollablePlayer()
           } else {
             Text('当前没有歌曲')
               .fontSize(15)
@@ -314,7 +429,17 @@ export struct PlayerPage {
     }
     .hideTitleBar(true)
     .systemTransition(NavigationSystemTransitionType.SLIDE_BOTTOM)
-    .onShown(() => { this.visible = true; })
+    .onShown(() => {
+      this.motionEnabled = allowsPlayerMotion(this.getUIContext().getHostContext());
+      this.visible = true;
+    })
+    .onBackPressed(() => {
+      if (this.detailProgress >= 0.6) {
+        this.scrollToSection(false);
+        return true;
+      }
+      return false;
+    })
     .onHidden(() => { this.visible = false; })
     .systemBarStyle({ statusBarContentColor: '#FFFFFF' })
     .onReady((context: NavDestinationContext) => { this.pathStack = context.pathStack; })

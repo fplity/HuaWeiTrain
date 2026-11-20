@@ -1,3 +1,8 @@
+export interface SongFavorites {
+  isFavorite(songId: number): boolean;
+  toggleFavorite(songId: number): void;
+}
+
 export interface Song {
   id: number;
   title: string;

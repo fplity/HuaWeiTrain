@@ -2,10 +2,12 @@ import { AnimatorResult } from '@ohos.animator';
 import { image } from '@kit.ImageKit';
 import { http } from '@kit.NetworkKit';
 import { MusicTheme } from '@cloudmusic/commons';
+import { allowsPlayerMotion } from '../service/PlayerMotion';
 
 const MAX_COVER_BYTES: number = 8 * 1024 * 1024;
 const MAX_DECODE_EDGE: number = 900;
 const FULL_CIRCLE: number = 2 * Math.PI;
+const ROTATION_DURATION_MS: number = 18000;
 
 @ComponentV2
 export struct DiscCanvas {
@@ -17,13 +19,13 @@ export struct DiscCanvas {
 
   @Monitor('spinning')
   syncRotation(): void {
-    if (!this.spinning) {
+    if (!this.spinning || !this.ready || !allowsPlayerMotion(this.getUIContext().getHostContext())) {
       this.animator?.pause();
       return;
     }
     if (!this.animator) {
       this.animator = this.getUIContext().createAnimator({
-        duration: 7500, easing: 'linear', delay: 0, fill: 'forwards',
+        duration: ROTATION_DURATION_MS, easing: 'linear', delay: 0, fill: 'forwards',
         direction: 'normal', iterations: -1, begin: 0, end: 360
       });
       this.animator.onFrame = (angle: number) => { this.angle = angle; };

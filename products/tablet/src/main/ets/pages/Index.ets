@@ -1,4 +1,4 @@
-import { SessionGate, Song } from '@cloudmusic/commons';
+import { SessionGate, Song, SongFavorites } from '@cloudmusic/commons';
 import { LoginPage } from '@cloudmusic/login';
 import { ListenerNavigation, OperatorHome } from '@cloudmusic/home';
 import { PlayerPage, PlayerService } from '@cloudmusic/player';
@@ -12,8 +12,9 @@ struct Index {
   }
 
   @Builder
-  playerPage() {
+  playerPage(favorites: SongFavorites) {
     PlayerPage({
+      favorites: favorites,
       player: PlayerService.store,
       onToggle: () => { PlayerService.togglePlayPause().catch(() => {}); },
       onStop: () => { PlayerService.clear(); },
@@ -27,7 +28,7 @@ struct Index {
   listenerHome() {
     ListenerNavigation({
       player: PlayerService.store,
-      playerPage: (): void => { this.playerPage() },
+      playerPage: (favorites: SongFavorites): void => { this.playerPage(favorites) },
       onPlaySongs: (songs: Song[]) => PlayerService.playAll(songs),
       onToggle: () => { PlayerService.togglePlayPause().catch(() => {}); },
       onStop: () => { PlayerService.clear(); }

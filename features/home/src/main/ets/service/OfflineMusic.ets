@@ -18,6 +18,17 @@ export class OfflineMusic {
   static albums: PlaylistDetails[] = [];
   private static ready: boolean = false;
 
+  static resolveSongs(ids: number[]): Song[] {
+    const songs: Song[] = [];
+    for (const id of ids) {
+      const song = OfflineMusic.songs.find((item: Song) => item.id === id);
+      if (song) {
+        songs.push(song);
+      }
+    }
+    return songs;
+  }
+
   static load(manager: resourceManager.ResourceManager): void {
     if (OfflineMusic.ready) {
       return;

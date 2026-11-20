@@ -4,16 +4,34 @@ import { MusicIcon } from './MusicIcon';
 import { MusicTheme } from './MusicTheme';
 
 @ComponentV2
+struct MiniPlayerImage {
+  @Require @Param source: string;
+  @Local failed: boolean = false;
+
+  build() {
+    if (!this.failed) {
+      Image(this.source.startsWith('rawfile:') ? $rawfile(this.source.substring(8)) : this.source)
+        .width('100%')
+        .height('100%')
+        .sourceSize({ width: 144, height: 144 })
+        .objectFit(ImageFit.Cover)
+        .draggable(false)
+        .onError(() => { this.failed = true; })
+        .accessibilityLevel('no')
+    }
+  }
+}
+
+@ComponentV2
 export struct MiniPlayer {
   @Require @Param player: PlayerStore;
   @Require @Param onOpen: () => void;
   @Require @Param onToggle: () => void;
   @Require @Param onStop: () => void;
-  @Local artworkFailed: boolean = false;
 
-  @Monitor('player.currentIndex', 'player.queue')
-  onTrackChanged(): void {
-    this.artworkFailed = false;
+  private get coverSources(): string[] {
+    const source = this.player.current?.coverUrl ?? '';
+    return source.startsWith('rawfile:') || source.startsWith('https://') ? [source] : [];
   }
 
   private status(): string {
@@ -27,19 +45,14 @@ export struct MiniPlayer {
   }
 
   @Builder
-  artwork(cover: string) {
+  artwork() {
     Stack({ alignContent: Alignment.Center }) {
       MusicIcon({ name: 'disc', iconSize: 22, tint: '#F7ABBF' })
-      if (!this.artworkFailed && (cover.startsWith('rawfile:') || cover.startsWith('https://'))) {
-        Image(cover.startsWith('rawfile:') ? $rawfile(cover.substring(8)) : cover)
-          .width('100%')
-          .height('100%')
-          .sourceSize({ width: 144, height: 144 })
-          .objectFit(ImageFit.Cover)
-          .onError(() => { this.artworkFailed = true; })
-          .accessibilityLevel('no')
-      }
+      ForEach(this.coverSources, (source: string) => {
+        MiniPlayerImage({ source: source })
+      }, (source: string) => source)
     }
+    .id('mini-player-artwork')
     .width(39)
     .height(39)
     .backgroundColor(MusicTheme.wine)
@@ -53,7 +66,7 @@ export struct MiniPlayer {
         Row({ space: 3 }) {
           Button({ type: ButtonType.Normal }) {
             Row({ space: 10 }) {
-              this.artwork(this.player.current?.coverUrl ?? '')
+              this.artwork()
               Column({ space: 3 }) {
                 Text(this.player.current?.title ?? '')
                   .id('mini-player-title')

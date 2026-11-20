@@ -2,7 +2,7 @@ export { Log } from './src/main/ets/utils/Log';
 export { SongComment } from './src/main/ets/model/Comment';
 export { ApiConfig } from './src/main/ets/config/ApiConfig';
 export { User, Role, LoginResp, Session, isValidUser } from './src/main/ets/model/User';
-export { Song } from './src/main/ets/model/Song';
+export { Song, SongFavorites } from './src/main/ets/model/Song';
 export { SessionStore } from './src/main/ets/store/SessionStore';
 export { AppContext } from './src/main/ets/utils/AppContext';
 export { HttpService } from './src/main/ets/utils/HttpService';
